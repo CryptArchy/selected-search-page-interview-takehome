@@ -14,7 +14,7 @@ export const PageContainer = styled.div`
 export const PageContentContainer = styled.div`
   position: relative;
   margin: auto;
-  max-width: 960px;
+  max-width: 1900px;
   padding: 18px;
 `;
 
@@ -40,10 +40,10 @@ export const PanelContainerHeading = styled.div`
   font-weight: 700;
   text-transform: uppercase;
   font-size: 16px;
-  }
 `;
 export const PanelColumnsContainer = styled.div`
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
 `;
 export const PanelMainColumn = styled.div`
@@ -51,6 +51,7 @@ export const PanelMainColumn = styled.div`
   width: 50%;
 `;
 export const PanelSideColumn = styled.div`
+  flex-grow: 1;
   width: 270px;
   margin-left: ${({ marginLeft }) => marginLeft && `20px`};
   margin-right: ${({ marginRight }) => marginRight && `20px`};
@@ -88,4 +89,12 @@ export const StyledTextInput = styled.input`
   outline: none;
   border-radius: 4px;
   border: 1px solid #e3eaef;
+`;
+
+export const StyledScrollTopButton = styled.button`
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  width: 130px;
+  margin-left: -65px;
 `;

@@ -14,6 +14,7 @@ import {
   PanelSection,
   PanelSectionTitle,
   StyledTextInput,
+  StyledScrollTopButton,
   PanelSectionHeader
 } from "./StyledComponents";
 import Select from "react-select";
@@ -90,13 +91,33 @@ export default class App extends React.Component {
   constructor(props) {
     super(props);
     // Bind instance methods
+
+    // Event handlers
     this.handleTextSearchOnChange = this.handleTextSearchOnChange.bind(this);
     this.handleSortByOnChange = this.handleSortByOnChange.bind(this);
     this.handleGradeLevelsOnChange = this.handleGradeLevelsOnChange.bind(this);
-    this.teacherTextSearch = this.teacherTextSearch.bind(this);
-    this.teacherFilter = this.teacherFilter.bind(this);
+    this.handleStatesFilterOnChange = this.handleStatesFilterOnChange.bind(
+      this
+    );
+
+    // Utility methods
     this.teacherSort = this.teacherSort.bind(this);
+    this.teacherFilter = this.teacherFilter.bind(this);
+    this.teacherTextFilter = this.teacherTextFilter.bind(this);
+
     // Set initial state
+
+    // These "states" are the US geopolitical regions.
+    // Need to filter out the unique set of states in the teacher data,
+    // then construct the "programatic state" object that will track
+    // which ones are selected for filtering.
+    let teacherStates = {};
+    teacherData.forEach((t) => {
+      Object.assign(t, { zipInfo: zipcodes.lookup(t.zipCode) });
+      teacherStates[t.zipInfo.state] = true;
+    });
+
+    // The constructor is the only place that "this.state" should be directly assigned
     this.state = {
       selectedGradeLevels: {
         nursery: true,
@@ -105,6 +126,7 @@ export default class App extends React.Component {
         upper: true
       },
       sortBy: "alphabeticalByLastName",
+      states: teacherStates,
       textSearch: ""
     };
   }
@@ -118,34 +140,26 @@ export default class App extends React.Component {
   }
 
   handleGradeLevelsOnChange(evt) {
+    // Copy current state
     let selected = { ...this.state.selectedGradeLevels };
+    // Update copy with new changes
     selected[evt.target.value] = !selected[evt.target.value];
+    // Handle special case of "lower school" and "nursery school"
+    // being considered as one category for filtering
     if (evt.target.value === "lower") {
       selected["nursery"] = selected["lower"];
     }
-    console.log(selected);
+    // Push changed copy into the merger
     this.setState({ selectedGradeLevels: selected });
   }
 
-  teacherFilter(t) {
-    let keys = Object.keys(t.gradeLevelsTaught);
-    let results = keys.map(
-      (key) => this.state.selectedGradeLevels[key] === t.gradeLevelsTaught[key]
-    );
-
-    return results.some((t) => t) && this.teacherTextSearch(t);
-  }
-
-  teacherTextSearch(t) {
-    if (t instanceof Object) {
-      return Object.values(t).some((value) => this.teacherTextSearch(value));
-    } else if (t instanceof Array) {
-      return t.some((value) => this.teacherTextSearch(value));
-    } else if (t instanceof String) {
-      return t.includes(this.state.textSearch);
-    } else {
-      return JSON.stringify(t).includes(this.state.textSearch);
-    }
+  handleStatesFilterOnChange(evt) {
+    // Copy current state
+    let selected = { ...this.state.states };
+    // Update copy with new changes
+    selected[evt.target.value] = !selected[evt.target.value];
+    // Push changed copy into the merger
+    this.setState({ states: selected });
   }
 
   teacherSort(a, b) {
@@ -167,8 +181,72 @@ export default class App extends React.Component {
     }
   }
 
+  teacherFilter(t) {
+    return (
+      this.teacherStateFilter(t) &&
+      this.teacherGradeFilter(t) &&
+      this.teacherTextFilter(t)
+    );
+  }
+
+  teacherTextFilter(t) {
+    if (t instanceof Object) {
+      return Object.values(t).some((value) => this.teacherTextFilter(value));
+    } else if (t instanceof Array) {
+      return t.some((value) => this.teacherTextFilter(value));
+    } else if (t instanceof String) {
+      return t.includes(this.state.textSearch);
+    } else {
+      return JSON.stringify(t).includes(this.state.textSearch);
+    }
+  }
+
+  teacherGradeFilter(t) {
+    let keys = Object.keys(t.gradeLevelsTaught);
+    let results = keys.map(
+      (key) => this.state.selectedGradeLevels[key] === t.gradeLevelsTaught[key]
+    );
+    return results.some((t) => t);
+  }
+
+  teacherStateFilter(t) {
+    return this.state.states[t.zipInfo.state];
+  }
+
   render() {
     const { sortBy } = this.state;
+    const teacherCards = teacherData
+      .filter(this.teacherFilter)
+      .sort(this.teacherSort)
+      .map((teacher) => <TeacherCard teacher={teacher} />);
+    let scrollToTop;
+    if (teacherCards.length >= 2) {
+      scrollToTop = (
+        <StyledScrollTopButton
+          onClick={() => {
+            scroll.scrollToTop({
+              duration: 1600,
+              delay: 100,
+              smooth: true
+            });
+          }}
+        >
+          Scroll To Top
+        </StyledScrollTopButton>
+        // <button
+        //   onClick={() => {
+        //     scroll.scrollToTop({
+        //       duration: 1600,
+        //       delay: 100,
+        //       smooth: true
+        //     });
+        //   }}
+        // >
+        //   Scroll To Top
+        // </button>
+      );
+    }
+
     return (
       <PageContainer>
         <PageContentContainer>
@@ -227,26 +305,29 @@ export default class App extends React.Component {
                     <label>High-School</label>
                   </div>
                 </PanelSection>
+                <PanelSection>
+                  <label style={{ display: "block", marginBottom: "14px" }}>
+                    States
+                  </label>
+                  {Object.keys(this.state.states)
+                    .sort(String.localeCompare)
+                    .map((stKey) => (
+                      <div>
+                        <input
+                          type="checkbox"
+                          value={stKey}
+                          onChange={this.handleStatesFilterOnChange}
+                          checked={this.state.states[stKey]}
+                        />
+                        <label>{stKey}</label>
+                      </div>
+                    ))}
+                </PanelSection>
               </PanelContainer>
             </PanelSideColumn>
             <PanelMainColumn>
-              {teacherData
-                .filter(this.teacherFilter)
-                .sort(this.teacherSort)
-                .map((teacher) => (
-                  <TeacherCard teacher={teacher} />
-                ))}
-              <button
-                onClick={() => {
-                  scroll.scrollToTop({
-                    duration: 1600,
-                    delay: 100,
-                    smooth: true
-                  });
-                }}
-              >
-                Scroll To Top
-              </button>
+              {teacherCards}
+              {scrollToTop}
             </PanelMainColumn>
           </PanelColumnsContainer>
         </PageContentContainer>
