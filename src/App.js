@@ -14,6 +14,7 @@ import {
   PanelSection,
   PanelSectionTitle,
   StyledTextInput,
+  StyledScrollTopButton,
   PanelSectionHeader
 } from "./StyledComponents";
 import Select from "react-select";
@@ -214,6 +215,38 @@ export default class App extends React.Component {
 
   render() {
     const { sortBy } = this.state;
+    const teacherCards = teacherData
+      .filter(this.teacherFilter)
+      .sort(this.teacherSort)
+      .map((teacher) => <TeacherCard teacher={teacher} />);
+    let scrollToTop;
+    if (teacherCards.length >= 2) {
+      scrollToTop = (
+        <StyledScrollTopButton
+          onClick={() => {
+            scroll.scrollToTop({
+              duration: 1600,
+              delay: 100,
+              smooth: true
+            });
+          }}
+        >
+          Scroll To Top
+        </StyledScrollTopButton>
+        // <button
+        //   onClick={() => {
+        //     scroll.scrollToTop({
+        //       duration: 1600,
+        //       delay: 100,
+        //       smooth: true
+        //     });
+        //   }}
+        // >
+        //   Scroll To Top
+        // </button>
+      );
+    }
+
     return (
       <PageContainer>
         <PageContentContainer>
@@ -293,23 +326,8 @@ export default class App extends React.Component {
               </PanelContainer>
             </PanelSideColumn>
             <PanelMainColumn>
-              {teacherData
-                .filter(this.teacherFilter)
-                .sort(this.teacherSort)
-                .map((teacher) => (
-                  <TeacherCard teacher={teacher} />
-                ))}
-              <button
-                onClick={() => {
-                  scroll.scrollToTop({
-                    duration: 1600,
-                    delay: 100,
-                    smooth: true
-                  });
-                }}
-              >
-                Scroll To Top
-              </button>
+              {teacherCards}
+              {scrollToTop}
             </PanelMainColumn>
           </PanelColumnsContainer>
         </PageContentContainer>
