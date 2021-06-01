@@ -40,7 +40,6 @@ export const PanelContainerHeading = styled.div`
   font-weight: 700;
   text-transform: uppercase;
   font-size: 16px;
-  }
 `;
 export const PanelColumnsContainer = styled.div`
   display: flex;
